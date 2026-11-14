@@ -201,7 +201,19 @@ SOURCES_NOTE = ('<p class="note">Each source is one sentence quoted from a paper
 OPEN_TARGET_JS = ('<script>function openTarget(){var e=location.hash&&document.getElementById('
                   'decodeURIComponent(location.hash.slice(1)));if(!e)return;for(var p=e;p;p=p.parentElement)'
                   '{if(p.tagName==="DETAILS")p.open=true;}if(e.tagName!=="DETAILS"){var d=e.querySelector("details");'
-                  'if(d)d.open=true;}e.scrollIntoView();}addEventListener("hashchange",openTarget);openTarget();</script>')
+                  'if(d)d.open=true;}var pp=e.closest("[popover]");if(pp&&pp.showPopover){try{pp.showPopover()}catch(x){}}'
+                  'only(pp,e);e.scrollIntoView({block:"nearest"});}addEventListener("hashchange",openTarget);openTarget();'
+                  # in a row popup, show just one card (class "only"); "Show all" lifts it
+                  'function only(pp,t){if(!pp||!pp.classList.contains("rowpop"))return;var li=t.closest("li");if(!li)return;'
+                  'pp.querySelectorAll("ul.cells>li").forEach(function(x){x.classList.toggle("on",x===li)});'
+                  'pp.classList.add("only");}'
+                  # a button with data-open="<id>" opens its popup (popovertarget) and then that card in it
+                  'document.addEventListener("click",function(ev){var a=ev.target.closest(".show-all");'
+                  'if(a){a.closest("[popover]").classList.remove("only");return;}'
+                  'var b=ev.target.closest("[data-open]");if(!b)return;'
+                  'setTimeout(function(){var t=document.getElementById(b.getAttribute("data-open"));if(!t)return;'
+                  'var d=t.querySelector("details");if(d)d.open=true;only(t.closest("[popover]"),t);'
+                  't.scrollIntoView({block:"nearest"});},0);});</script>')
 
 
 # "?" button (top right of the Why box and the glance table) opening one popup per page.
@@ -222,6 +234,12 @@ GRADING_POPOVER = (
     '<p class="ex">Example: start 4, −1 studies disagree, +1 shows how it works = <strong>4 High</strong>.</p>'
     '<p><a href="method.html#certainty">Full method →</a> '
     '<button type="button" popovertarget="how-grading" popovertargetaction="hide">Close</button></p></div>')
+
+
+# "Full screen" for a wide map: shows the button only where the browser can do it; Esc exits.
+FULLSCREEN_JS = ('<script>document.querySelectorAll("[data-fs]").forEach(function(b){var el=document.getElementById('
+                 'b.getAttribute("data-fs"));if(!el||!el.requestFullscreen)return;b.hidden=false;'
+                 'b.addEventListener("click",function(){el.requestFullscreen().catch(function(){})});});</script>')
 
 
 def paper_groups(quotes: Iterable[Quote]) -> List[List[Quote]]:
@@ -404,8 +422,8 @@ def headline_reason(checks: List[Tuple[str, str]]) -> Optional[Tuple[str, str]]:
 
 CHIP = {'increase': ('▲', 'Increase', 's'), 'decrease': ('▼', 'Decrease', 's'), 'mixed': ('⇅', 'Mixed', ''),
         'no_effect': ('–', 'No effect', ''), 'unclear': ('?', 'Unclear', ''),
-        'below_reference': ('▼', 'Below reference', ''), 'comparable': ('=', 'Comparable', ''),
-        'above_reference': ('▲', 'Above reference', '')}
+        'below_reference': ('◀', 'Behind', ''), 'comparable': ('=', 'Matches', ''),
+        'above_reference': ('▶', 'Ahead', '')}  # plain words, the same as the Q2 chart
 
 
 def chip(d: str, path: str) -> str:
@@ -521,7 +539,7 @@ def card_name(f: Finding, subject: bool) -> str:
 
 def finding_card(data: SiteData, f: Finding, sources: List[SourcePage], *, subject: bool = True,
                  tag: str = '', level: int = 3, extra: str = '', links: str = '',
-                 quotes_shown: int = QUOTES_IN_CARD, compact: bool = False) -> str:
+                 quotes_shown: int = QUOTES_IN_CARD, compact: bool = False, open_: bool = False) -> str:
     """One finding. Closed it is one line: direction, name, certainty, study split, Details.
     Open it shows panels: why that certainty, sources (quotes first), Q1 pathways."""
     base = '%s/%s' % (f.question, f.slug)
@@ -573,9 +591,9 @@ def finding_card(data: SiteData, f: Finding, sources: List[SourcePage], *, subje
     src = '<section class="panel"><h5>Sources</h5>%s<p class="go">%s</p></section>' % (quotes, all_link)
     pw = pathways(data, f) if f.question in data.graphs else ''
     more = extra + (('<p class="flinks">%s</p>' % links) if links and not pw else '')
-    return ('<article class="fcard%s fdir-%s" id="f-%s"><details class="fd"><summary>%s</summary>'
+    return ('<article class="fcard%s fdir-%s" id="f-%s"><details class="fd"%s><summary>%s</summary>'
             '<div class="panels">%s%s%s</div>%s</details></article>'
-            % (' fref' if f.reference else '', esc(f.direction.replace('_', '-')), esc(f.slug), summary, why, src, pw, more))
+            % (' fref' if f.reference else '', esc(f.direction.replace('_', '-')), esc(f.slug), ' open' if open_ else '', summary, why, src, pw, more))
 
 
 def at_a_glance(q: Question, short_html: str = '') -> str:
@@ -702,7 +720,7 @@ def side_nav(data: SiteData, filename: str, jumps: Optional[List[Tuple[str, str]
         qs.append(item('%s.html' % qid, '%02d' % n, question_name(q)))
         if qid in data.graphs:
             qs.append(item(graph_file(qid), '↳', '%s graph' % question_name(q), 'sub'))
-    more = item('method.html', '?', 'How it works') + item('index.html', '⌂', 'Home')
+    more = item('method.html', '?', 'Guide') + item('index.html', '⌂', 'Home')
     return ('<aside class="side">'
             '<nav aria-label="Questions"><ol class="qnav">%s</ol><ul class="qnav more">%s</ul></nav></aside>'
             % (''.join(qs), more))
@@ -754,17 +772,29 @@ def page(data: SiteData, filename: str, title: str, description: str, body: str,
 
 # --------------------------------------------------------------- pages
 
+# "How to read this site": the symbols used on every page (shown on the Guide page)
+READ_KEY = ('<ul class="key-list">'
+            '<li><span class="chip dir-increase"><span aria-hidden="true">▲</span> Increases</span> '
+            '<span class="chip dir-decrease"><span aria-hidden="true">▼</span> Decreases</span> '
+            '<span class="chip dir-mixed"><span aria-hidden="true">⇅</span> Mixed</span> what studies found</li>'
+            '<li><span class="bars b3" aria-hidden="true"></span> how sure we can be, 1 to 4</li>'
+            '<li><span class="chip gapchip"><span aria-hidden="true">?</span> Not studied</span> nobody here tested it '
+            '(not “doesn’t work”)</li>'
+            '<li><span class="qmark" aria-hidden="true">“ ”</span> sentences quoted word for word from the papers</li>'
+            '</ul>')
+
+
 def render_index(data: SiteData, prose: Prose) -> str:
     """Home, laid out as the Figma "home page" frame: each section has a big blue heading over a
-    thin rule, with its text indented below; a numbered menu on the left jumps to the sections.
-    Content: the headline, one sentence, how to use the site, each question with its real short
-    answer, and a small key for reading the site."""
+    thin rule, with its text indented below; a numbered menu on the left (pinned bottom-left)
+    leads to the sections and the questions. Content: the headline, one sentence, how to use the
+    site, and the questions (each answer is one click away)."""
     def section(sid: str, heading: str, inner: str, level: int = 2, cls: str = '') -> str:
         return ('<section class="hsec%s" id="%s" aria-labelledby="%s-h"><h%d id="%s-h">%s</h%d>'
                 '<div class="hsec-body">%s</div></section>'
                 % (' ' + cls if cls else '', sid, sid, level, sid, heading, level, inner))
 
-    menu = []      # (anchor, mark, label) for the left menu
+    menu = []      # (link, mark, label) for the left menu
     sections = []
     m = data.manifest.get('graph') or {}
     papers = (' from %s papers' % span('manifest/graph/source_documents', m['source_documents'])
@@ -777,16 +807,14 @@ def render_index(data: SiteData, prose: Prose) -> str:
     menu.append(('#guide', '?', 'How to use this site'))
     sections.append(section(
         'guide', 'How to use this site',
-        '<ol>'
-        '<li><strong>Pick a question</strong> below or in the menu.</li>'
-        '<li><strong>Read the short answer.</strong> The best-supported findings in a line or two, and how '
-        'sure we can be of them.</li>'
-        '<li><strong>Scan “At a glance”.</strong> Every factor, which way it pushes the outcome, how sure '
-        'we can be (<span class="bars b3" aria-hidden="true"></span> 1 to 4) and how many studies.</li>'
-        '<li><strong>Open a finding</strong> to see why it got that certainty and the sentences quoted '
-        'from the papers, with links to each paper.</li>'
-        '<li><strong>Read “things this answer can’t tell you”</strong> before acting on it. It says how '
-        'the studies were picked and grouped, in the data team’s own words.</li></ol>', cls='guide'))
+        '<p>Pick one of the questions below. Each answer starts with a short answer, then a chart or table '
+        'you can take in at a glance: what each treatment does, how sure we can be, and how many studies '
+        'looked at it.</p>'
+        '<p>Select any row or box to see why the evidence got its certainty grade and to read the exact '
+        'sentences from the papers, with a link to each one. Before acting on an answer, open “things this '
+        'answer can’t tell you”: it says how the studies were picked and grouped.</p>'
+        '<p class="go"><a href="method.html">The Guide: symbols, grading and where the data comes from →</a>'
+        '</p>', cls='guide'))
     for n, (qid, q) in enumerate(data.questions.items(), 1):
         graph = ''
         if qid in data.graphs:
@@ -796,33 +824,21 @@ def render_index(data: SiteData, prose: Prose) -> str:
         sections.append(section(
             'card-%s' % qid,
             '<span class="qn">Q%d.</span> <a href="%s.html">%s</a>' % (n, esc(qid), esc(question_name(q))),
-            '<p class="q">%s</p>%s<p class="go"><a href="%s.html">Read the answer →<span class="sr-only"> %s'
-            '</span></a>%s</p>' % (esc(q.text), short_box(prose.short_answer[qid].html), esc(qid),
-                                    esc(question_name(q)), graph), cls='qsec'))
-    menu.append(('#key', '·', 'How to read this site'))
-    sections.append(section(
-        'key', 'How to read this site',
-        '<ul>'
-        '<li><span class="chip dir-increase"><span aria-hidden="true">▲</span> Increases</span> '
-        '<span class="chip dir-decrease"><span aria-hidden="true">▼</span> Decreases</span> '
-        '<span class="chip dir-mixed"><span aria-hidden="true">⇅</span> Mixed</span> what studies found</li>'
-        '<li><span class="bars b3" aria-hidden="true"></span> how sure we can be, 1 to 4</li>'
-        '<li><span class="chip gapchip"><span aria-hidden="true">?</span> Not studied</span> nobody here tested it '
-        '(not “doesn’t work”)</li>'
-        '<li><span class="qmark" aria-hidden="true">“ ”</span> sentences quoted word for word from the papers</li>'
-        '</ul><p class="go"><a href="method.html">How it works →</a></p>', cls='key-strip'))
+            '<p class="q">%s</p><p class="go"><a href="%s.html">Go to question →<span class="sr-only"> %s'
+            '</span></a>%s</p>' % (esc(q.text), esc(qid), esc(question_name(q)), graph), cls='qsec'))
     # data-sec: the home section each item stands for, so static/tree.js can mark the one being read
     menu_html = '<ol class="qnav">%s</ol>' % ''.join(
         '<li data-sec="%s"><a href="%s"><span class="n" aria-hidden="true">%s</span> %s</a></li>'
         % (esc(h[1:] if h.startswith('#') else 'card-' + h[:-len('.html')]), esc(h), esc(mk), esc(t))
         for h, mk, t in menu)
-    return page(data, 'index.html', 'Restoration evidence', 'Plain answers to restoration questions, '
+    return page(data, 'index.html', 'Whimsy · Restoration evidence', 'Plain answers to restoration questions, '
                 'with certainty, gaps and sources.', ''.join(sections), home_menu=menu_html,
                 script='static/tree.js')
 
 
 def number_word(n: int) -> str:
-    return {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six'}.get(n, str(n))
+    return {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight',
+            9: 'nine', 10: 'ten'}.get(n, str(n))
 
 
 def short_box(inner: str, sid: str = '') -> str:
@@ -887,7 +903,7 @@ def not_studied(q: Question) -> str:
 def question_page(data: SiteData, prose: Prose, q: Question, main: str, *,
                   jumps: List[Tuple[str, str]], short: Optional[str] = None, scripts: str = '') -> str:
     """The one template every question page uses, in this order: kicker + h1, short answer,
-    limitations, MAIN VIEW, not studied, link to How it works."""
+    limitations, MAIN VIEW, not studied, link to the Guide."""
     n = list(data.questions).index(q.qid) + 1
     name = question_name(q)
     body = '<p class="kicker">Question %02d · %s</p><h1>%s</h1>' % (n, esc(name), esc(q.text))
@@ -895,7 +911,7 @@ def question_page(data: SiteData, prose: Prose, q: Question, main: str, *,
     body += limits_box(q.qid, q.limitations, q.rule, q.how_built)
     body += main
     body += not_studied(q)
-    body += ('<p class="to-method"><a href="method.html">How it works: how certainty is graded, where the data '
+    body += ('<p class="to-method"><a href="method.html">Guide: how to read this site, how certainty is graded, where the data '
              'comes from, and the limits →</a></p>')
     jumps = [('#short', 'Short answer')] + jumps + ([('#gaps-h', 'Not studied')] if q.gaps else [])
     return page(data, '%s.html' % q.qid, 'Q%d · %s' % (n, name), q.text,
@@ -972,6 +988,131 @@ def interactions_section(data: SiteData, q: Question) -> str:
                         ''.join(rows), 'interactions'))
 
 
+# --------------------------------------------------------------- Q2 timeline
+# "When were these marshes measured?": one row per comparison finding, a bar for each marsh age
+# in its time_points. It is NOT a recovery curve: no study reports a time to reach the
+# reference (time_to_reference is null), and the bar colour is the overall result.
+
+TL_WORD = {'below_reference': ('◀', 'Behind'), 'above_reference': ('▶', 'Ahead'),
+           'comparable': ('=', 'Matches'), 'mixed': ('⇅', 'Mixed'), 'unclear': ('?', 'Unclear'),
+           'increase': ('▲', 'Increase'), 'decrease': ('▼', 'Decrease'), 'no_effect': ('–', 'No effect')}
+TL_MAX, TL_STEP = 30, 5                      # axis: 0 to 30, a tick every 5
+TL_X0, TL_PX = 400, 16                       # where the axis starts, px per year (fits the page column)
+TL_ROW, TL_TOP, TL_GROUP = 76, 60, 44        # row height, space for the axis, a group heading
+TL_BTN = 44                                  # the "?" column on the right
+AGE_RANGE = re.compile(r'^\s*(\d+)\s*[-–]\s*(\d+)\s*years?\s*$')
+AGE_ONE = re.compile(r'^\s*(\d+)\s*years?\s*$')
+
+
+def f1(v: float) -> str:
+    s_ = '%.1f' % v
+    return s_[:-2] if s_.endswith('.0') else s_
+
+
+def parse_age(t: str) -> Optional[Tuple[int, int]]:
+    """'6-10 years' -> (6, 10); '9 years' -> (9, 9); anything else -> None."""
+    m = AGE_RANGE.match(t)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    m = AGE_ONE.match(t)
+    if m:
+        return int(m.group(1)), int(m.group(1))
+    return None
+
+
+def timeline_chart(q: Question, popups: Dict[str, str]) -> str:
+    """The Q2 main view: one row per finding (compared with natural marshes, then change with age).
+    A row is short; its "?" (or a click anywhere on it) opens a popup with the finding's full card.
+    Static SVG, values in data-check spans; the same data follows as a table."""
+    rank = {c: i for i, c in enumerate(CERT_ORDER)}
+    groups = [('', sorted(q.findings, key=lambda f: (not f.raw.get('lags'), rank.get(f.certainty, 9))))]
+    if q.trends:
+        groups.append(('As marshes age', list(q.trends)))
+    allf = [f for _, fs in groups for f in fs]
+    if not allf or not any(f.raw.get('time_points') for f in allf):
+        return ''
+    qid = q.qid
+    x = lambda yr: TL_X0 + min(yr, TL_MAX) * TL_PX
+    width = x(TL_MAX) + 24 + TL_BTN
+    parts, buttons, y = [], [], TL_TOP
+    parts.append('<defs><pattern id="tl-hatch" width="8" height="8" patternUnits="userSpaceOnUse" '
+                 'patternTransform="rotate(45)"><rect width="8" height="8" class="tl-hatch-bg"/>'
+                 '<line x1="0" y1="0" x2="0" y2="8" class="tl-hatch-line"/></pattern></defs>')
+    # axis title first (so no tick number runs into it), then tick numbers
+    parts.append('<text class="tl-axis-title" x="%d" y="18">Marsh age when measured (years)</text>' % TL_X0)
+    for yr in range(0, TL_MAX + 1, TL_STEP):
+        parts.append('<text class="tl-tick" x="%d" y="%d" text-anchor="middle">%d</text>' % (x(yr), TL_TOP - 18, yr))
+    rows_svg = []
+    for title, fs in groups:
+        if title:
+            rows_svg.append('<text class="tl-group" x="0" y="%d">%s</text>' % (y + 30, esc(title)))
+            y += TL_GROUP
+        for f in fs:
+            base = '%s/%s' % (qid, f.slug)
+            sym, word = TL_WORD.get(f.direction, ('', words(f.direction)))
+            lag = ' <tspan class="tl-lag">· lags</tspan>' if f.raw.get('lags') else ''
+            row = ['<g class="tl-row tl-%s"><line class="tl-sep" x1="0" y1="%d" x2="%d" y2="%d"/>'
+                   '<text class="tl-name" x="0" y="%d">%s%s</text>'
+                   '<text class="tl-meta" x="0" y="%d"><tspan class="tl-sym" aria-hidden="true">%s</tspan> '
+                   '<tspan data-check="%s/direction">%s</tspan> · <tspan data-check="%s/certainty">%s</tspan> · '
+                   '<tspan data-check="%s/studies">%d</tspan> %s</text>'
+                   % (esc(f.direction.replace('_', '-')), y + TL_ROW, width, y + TL_ROW, y + 30,
+                      esc(f.outcome_label), lag, y + 54, sym, esc(base), esc(word), esc(base),
+                      esc(certainty_text(f.certainty)), esc(base), f.studies, plural(f.studies, 'study', 'studies'))]
+            ages = [a for a in (parse_age(t) for t in f.raw.get('time_points') or []) if a is not None]
+            if ages:
+                for a, b in ages:
+                    x1, x2 = x(a), x(b)
+                    if x2 - x1 < 8:
+                        x1, x2 = (x1 + x2) / 2 - 4, (x1 + x2) / 2 + 4
+                    row.append('<rect class="tl-bar" x="%s" y="%d" width="%s" height="28" rx="4"/>'
+                               % (f1(x1), y + 24, f1(x2 - x1)))
+            else:
+                row.append('<rect class="tl-none" x="%d" y="%d" width="%d" height="28" fill="url(#tl-hatch)"/>'
+                           '<text class="tl-none-t" x="%d" y="%d" text-anchor="middle">age not reported</text>'
+                           % (x(0), y + 24, x(TL_MAX) - x(0), (x(0) + x(TL_MAX)) // 2, y + 43))
+            row.append('</g>')
+            rows_svg.append(''.join(row))
+            # the whole row is a button (over the drawing); its "?" sits at the right
+            buttons.append('<button type="button" class="tl-open" popovertarget="pop-%s" '
+                           'style="top:%dpx;height:%dpx;width:%dpx">'
+                           '<span class="sr-only">Details: %s</span><span class="tl-q" aria-hidden="true">?</span></button>'
+                           % (esc(f.slug), y, TL_ROW, width, esc(f.label)))
+            y += TL_ROW
+    height = y + 8
+    grid = ''.join('<line class="tl-grid" x1="%d" y1="%d" x2="%d" y2="%d"/>' % (x(yr), TL_TOP - 10, x(yr), height - 8)
+                   for yr in range(0, TL_MAX + 1, TL_STEP))
+    n_aged = sum(1 for f in allf if f.raw.get('time_points'))
+    summary = ('Ages of the marshes studied for %d findings; %d of them report marsh ages. Each row shows the '
+               'overall result. Select a row for its details. The table below has the same data.' % (len(allf), n_aged))
+    svg = ('<svg class="tl" width="%d" height="%d" viewBox="0 0 %d %d" role="group" aria-label="%s">%s%s%s</svg>'
+           % (width, height, width, height, esc(summary), ''.join(parts), grid, ''.join(rows_svg)))
+    rows = []
+    for f in allf:
+        base = '%s/%s' % (qid, f.slug)
+        sym, word = TL_WORD.get(f.direction, ('', words(f.direction)))
+        tps = f.raw.get('time_points') or []
+        ages = (', '.join(span('%s/time_points/%d' % (base, i), t) for i, t in enumerate(tps))
+                if tps else '<span class="muted">not reported</span>')
+        rows.append('<tr><th scope="row">%s%s</th><td><span aria-hidden="true">%s</span> %s</td>'
+                    '<td>%s</td><td>%s</td><td>%s</td></tr>'
+                    % (esc(f.outcome_label), ' (lags)' if f.raw.get('lags') else
+                       (' (as marshes age)' if f.kind == 'trend' else ''), sym,
+                       span(base + '/direction', word), span(base + '/certainty', CERT_WORD[f.certainty]),
+                       span(base + '/studies', f.studies), ages))
+    tbl = table('The chart as a table: each finding, its overall result and the marsh ages studied',
+                ['Outcome', 'Result', 'Certainty', 'Studies', 'Ages measured'], ''.join(rows), 'tl-table')
+    pops = ''.join(popups[f.slug] for f in allf)
+    return ('<h2 id="timeline">When were these marshes measured?</h2>'
+            '<p class="note">Select a row (or its <span class="tl-q-inline" aria-hidden="true">?</span>) for why it has '
+            'that certainty and the quoted sources.</p>'
+            '<div class="tl-wrap" role="region" aria-label="Marsh ages chart" tabindex="0">%s%s</div>'
+            '<p class="tl-cap">Bars show the marsh ages studies looked at. The result (Behind / Ahead) is overall, '
+            'not at each age. No study followed a marsh until it matched a natural one.</p>'
+            '<details class="tl-tbl"><summary>The same data as a table</summary>%s</details>%s'
+            % (svg, ''.join(buttons), tbl, pops))
+
+
 def render_comparison(data: SiteData, prose: Prose, q: Question, sources: List[SourcePage]) -> str:
     """COMPARISON layout (Q2 today). Main view: what lags behind, compared with natural marshes, change as marshes age.
     The "how long?" answer is the short answer itself, so it comes first and is said once."""
@@ -1004,19 +1145,22 @@ def render_comparison(data: SiteData, prose: Prose, q: Question, sources: List[S
             out.append(finding_card(data, f, sources, tag=tag, extra=extra))
         return '<div class="cards">%s</div>' % ''.join(out)
 
-    main, jumps = '', []
-    lag = sa.get('lagging_attributes') or []
-    if lag:
-        main += ('<h2 id="lag">What lags behind natural marshes</h2><ul class="lagging">%s</ul>'
-                 % ''.join('<li>%s</li>' % span('%s/short_answer/lagging_attributes/%d' % (q.qid, i), a) for i, a in enumerate(lag)))
-        jumps.append(('#lag', 'What lags behind'))
-    main += ('<h2 id="compare">Compared with natural marshes</h2><p class="note">Behind, matches or ahead of a '
-             'natural reference wetland. “When measured” lists the ages of the marshes studied, not a time to '
-             'recovery.</p>' + cards(q.findings))
-    jumps.append(('#compare', 'Compared with natural'))
-    if q.trends:
-        main += '<h2 id="age">Change as marshes age</h2>' + cards(q.trends)
-        jumps.append(('#age', 'As marshes age'))
+    def popup(f: Finding) -> str:
+        tag = ' <span class="lags">Lags</span>' if f.raw.get('lags') else ''
+        extra = '<div class="when-wrap"><span class="mlabel">When measured</span> %s</div>' % when(f)
+        return ('<div popover id="pop-%s" class="pop fpop" role="dialog" aria-label="%s">'
+                '<button type="button" class="pop-x" popovertarget="pop-%s" popovertargetaction="hide">'
+                '<span aria-hidden="true">×</span><span class="sr-only">Close</span></button>%s</div>'
+                % (esc(f.slug), esc(f.label), esc(f.slug),
+                   finding_card(data, f, sources, tag=tag, extra=extra, open_=True)))
+
+    popups = {f.slug: popup(f) for f in q.all_findings()}
+    chart = timeline_chart(q, popups)
+    if chart:
+        main, jumps = chart, [('#timeline', 'When measured')]
+    else:  # no ages in the data: cards as on any other page
+        main = '<h2 id="compare">Findings</h2>' + cards(q.findings) + (cards(q.trends) if q.trends else '')
+        jumps = [('#compare', 'Findings')]
     return question_page(data, prose, q, main, jumps=jumps, short=short)
 
 
@@ -1028,8 +1172,9 @@ OUTCOME_SLOT = '{outcome}'
 
 
 def render_gapmap(data: SiteData, prose: Prose, q: Question, sources: List[SourcePage]) -> str:
-    """GAPMAP layout (Q3 today). Main view: the gap map (sticky names), the ten most studied, then every studied combination
-    grouped by intervention, closed; a map cell opens its card. Gaps are in the shared Not studied."""
+    """GAPMAP layout (Q3 today). Main view: the gap map (sticky names) and the ten most studied. A filled
+    cell, or a row's "?", opens a popup with that intervention's findings (one popup per row, to keep the
+    page light); a cell opens straight onto its own card. Gaps are in the shared Not studied."""
     grid = data.grids[q.qid]
     qid = q.qid
     s = q.extra['summary']
@@ -1041,27 +1186,47 @@ def render_gapmap(data: SiteData, prose: Prose, q: Question, sources: List[Sourc
             'result.</dd></div><div><dt><span class="swatch d-thin" aria-hidden="true"></span> thin</dt>'
             '<dd>1 study</dd></div><div><dt><span class="swatch d-some" aria-hidden="true"></span> some</dt>'
             '<dd>2–3 studies</dd></div><div><dt><span class="swatch d-dense" aria-hidden="true"></span> '
-            'dense</dt><dd>4 or more studies</dd></div></dl>'
-            '<p class="note">Each filled cell shows its number of studies and density word. Study counts '
-            'measure research effort, not effect size. Select a cell to open its finding. Scroll the map '
-            'sideways for more outcomes →</p>' % HELP_BTN)
+            'dense</dt><dd>4 or more studies</dd></div><div><dt><span class="bars b3" aria-hidden="true"></span> '
+            'bars</dt><dd>How sure we can be, 1 to 4 (not how much research)</dd></div></dl>'
+            '<p class="note">Each filled cell shows its number of studies and density word, then its certainty bars. Study counts '
+            'measure research effort, not effect size. Select a filled cell to open its finding. Scroll the map '
+            'sideways for more outcomes, or open it full screen.</p>' % HELP_BTN)
     head = ''.join('<th scope="col"><span>%s</span></th>' % esc(lbl) for _, lbl in grid['cols'])
-    trs = []
+    trs, pops = [], []
     for rid, rlbl in grid['rows']:
-        tds = []
+        rpop = 'r-%s' % slug(rid)
+        tds, items = [], []
         for cid, clbl in grid['cols']:
             item = grid['cells'][(rid, cid)]
             if isinstance(item, Gap):
-                tds.append('<td class="empty" aria-label="Not studied" title="Not studied: %s">–</td>' % esc(item.label))
-            else:
-                dens = item.raw.get('density', '')
-                tds.append('<td class="d-%s"><a href="#%s">%s <span class="sr-only">%s, </span>%s</a></td>'
-                           % (esc(dens), q3_cell_id(rid, cid), span('%s/%s/studies' % (qid, item.slug), item.studies),
-                              esc(plural(item.studies, 'study', 'studies')), esc(dens)))
-        trs.append('<tr><th scope="row">%s</th>%s</tr>' % (esc(rlbl), ''.join(tds)))
-    main += ('<div class="grid-wrap" role="region" aria-label="Gap map" tabindex="0"><table class="gapmap">'
+                tds.append('<td class="empty" aria-label="Not studied">–</td>')  # 261 of these: kept minimal
+                continue
+            dens = item.raw.get('density', '')
+            # a cell is a button: it opens its intervention's popup, on this combination's card
+            tds.append('<td class="d-%s"><button popovertarget="%s" data-open="%s"><span class="cl">%s '
+                       '<span class="sr-only">%s, </span>%s</span><span class="bars b%d" aria-hidden="true"></span>'
+                       '<span class="sr-only">, %s</span></button></td>'
+                       % (esc(dens), rpop, q3_cell_id(rid, cid), span('%s/%s/studies' % (qid, item.slug), item.studies),
+                          esc(plural(item.studies, 'study', 'studies')), esc(dens), CERT_BARS.get(item.certainty, 0),
+                          span('%s/%s/certainty' % (qid, item.slug), certainty_text(item.certainty))))
+            items.append('<li id="%s">%s</li>' % (q3_cell_id(rid, cid), finding_card(
+                data, item, sources, subject=False, level=4, quotes_shown=0, compact=True)))
+        n_f = len(items)
+        # under the name: how many of its combinations were studied (counted from the pack)
+        info = '<small class="rinfo">%d studied · %d not studied</small>' % (n_f, len(grid['cols']) - n_f)
+        trs.append('<tr><th scope="row"><span class="rname">%s</span>%s</th>%s</tr>' % (esc(rlbl), info, ''.join(tds)))
+        pops.append('<div popover id="%s" class="pop fpop rowpop" role="dialog" aria-label="%s">'
+                    '<button type="button" class="pop-x" popovertarget="%s" popovertargetaction="hide">'
+                    '<span aria-hidden="true">×</span><span class="sr-only">Close</span></button>'
+                    '<p class="pop-h">%s</p><p class="cnt">%d studied, %d not studied (listed under Not studied)</p>'
+                    '<ul class="cells">%s</ul><button type="button" class="show-all">Show all %d for %s</button></div>'
+                    % (rpop, esc(rlbl), rpop, esc(rlbl), n_f, len(grid['cols']) - n_f, ''.join(items), n_f, esc(rlbl)))
+    main += ('<p class="fs-row"><button type="button" class="fs-btn" data-fs="gapmap-wrap" hidden>'
+             '<span aria-hidden="true">⤢</span> Full screen</button></p>'
+             '<div class="grid-wrap" id="gapmap-wrap" role="region" aria-label="Gap map" tabindex="0"><table class="gapmap">'
              '<caption>Interventions (rows) by outcomes (columns): number of studies in each '
-             'combination</caption><thead><tr><td></td>%s</tr></thead><tbody>%s</tbody></table></div>'
+             'combination. Select a filled cell for its details.</caption><thead><tr><td></td>%s'
+             '</tr></thead><tbody>%s</tbody></table></div>'
              % (head, ''.join(trs)))
     by_id = {f.id: f for f in q.findings}
     dense = []
@@ -1071,23 +1236,16 @@ def render_gapmap(data: SiteData, prose: Prose, q: Question, sources: List[Sourc
         dense.append('<li><a href="#%s">%s</a>: %s · %s · %s</li>' % (
             q3_cell_id(f.subject_id, f.outcome_id), esc(f.subject_label + ' × ' + f.outcome_label), d,
             span('%s/%s/certainty' % (qid, f.slug), certainty_text(f.certainty)), n))
-    main += ('<h2 id="densest">Where the evidence is densest</h2><p>The pack\'s ten most-studied combinations, in its '
-             'order.</p><ol class="densest">%s</ol>' % ''.join(dense))
-    main += '<h2 id="every">Every studied combination</h2>'
-    for rid, rlbl in grid['rows']:
-        items = []
-        for cid, clbl in grid['cols']:
-            item = grid['cells'][(rid, cid)]
-            if isinstance(item, Gap):
-                continue
-            dens = '<p class="density">Evidence: <strong>%s</strong></p>' % esc(item.raw.get('density', ''))
-            items.append('<li id="%s">%s</li>' % (q3_cell_id(rid, cid), finding_card(
-                data, item, sources, subject=False, level=4, extra=dens, quotes_shown=0, compact=True)))
-        if items:
-            main += fold('r-%s' % slug(rid), esc(rlbl), 3, '%d studied' % len(items),
-                         '<ul class="cells">%s</ul>' % ''.join(items))
-    jumps = [('#map', 'Gap map'), ('#densest', 'Most studied'), ('#every', 'Every studied combination')]
-    return question_page(data, prose, q, main, jumps=jumps, short=short, scripts=CHECKS_JS)
+    # the top 3 show; the rest are one click away
+    more = ''
+    if len(dense) > 3:
+        more = ('<details class="more-densest"><summary>Show %d more</summary><ol class="densest" start="4">%s</ol></details>'
+                % (len(dense) - 3, ''.join(dense[3:])))
+    main += ('<h2 id="densest">Where the evidence is densest</h2><p>The pack\'s %s most-studied combinations, in its '
+             'order.</p><ol class="densest">%s</ol>%s' % (number_word(len(dense)), ''.join(dense[:3]), more))
+    main += ''.join(pops)
+    jumps = [('#map', 'Gap map'), ('#densest', 'Most studied')]
+    return question_page(data, prose, q, main, jumps=jumps, short=short, scripts=CHECKS_JS + FULLSCREEN_JS)
 
 
 def render_generic(data: SiteData, prose: Prose, q: Question, sources: List[SourcePage]) -> str:
@@ -1324,10 +1482,12 @@ def render_method(data: SiteData) -> str:
                'direction, the study design, the comparator and the sentence in the paper).')
     rule = next((q.rule for q in data.questions.values() if q.rule), 'unknown')
     body = (
-        '<h1>How it works</h1>'
-        '<nav class="tabs" aria-label="On this page"><ul><li><a href="#certainty">Certainty</a></li>'
+        '<h1>Guide</h1>'
+        '<nav class="tabs" aria-label="On this page"><ul><li><a href="#read">How to read this site</a></li>'
+        '<li><a href="#certainty">Certainty</a></li>'
         '<li><a href="#data">Where the data comes from</a></li><li><a href="#limits">Limits</a></li>'
         '<li><a href="#about">About us</a></li></ul></nav>'
+        '<section class="tab" aria-labelledby="read"><h2 id="read">How to read this site</h2>%%READKEY%%</section>'
         '%%CERTAINTY%%'
         '<section class="tab" aria-labelledby="data"><h2 id="data">Where the data comes from</h2>'
         '<p>%s The answer pack pools those claims into findings with simple, visible rules: no '
@@ -1386,6 +1546,7 @@ def render_method(data: SiteData) -> str:
     cert_start = body.index('<section class="tab" aria-labelledby="certainty">')
     cert = body[cert_start:]
     body = body[:cert_start].replace('%CERTAINTY%', cert)
+    body = body.replace('%READKEY%', READ_KEY)
     lim = []
     for n, (qid, q) in enumerate(data.questions.items(), 1):
         lim.append('<h3>%02d %s</h3><ul>%s</ul>' % (n, esc(question_name(q)), ''.join(
@@ -1407,8 +1568,10 @@ def render_method(data: SiteData) -> str:
                         'number on every page with the pack before the site is published.</p>'
                         '<p>Site code: MIT licence. Data: the Evidence Jam 2026 Lane 3 answer pack, built from '
                         'the Lane 2 CAMO causal graph.</p></section>')
-    return page(data, 'method.html', 'Method · How it works', 'How certainty is graded, what the direction '
-                'words mean and where every number comes from.', body)
+    jumps = [('#read', 'How to read this site'), ('#certainty', 'Certainty'), ('#data', 'Where the data comes from'),
+             ('#limits', 'Limits'), ('#about', 'About us')]
+    return page(data, 'method.html', 'Guide', 'How certainty is graded, what the direction '
+                'words mean and where every number comes from.', body, jumps=jumps)
 
 
 # --------------------------------------------------------------- entry

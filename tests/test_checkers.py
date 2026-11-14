@@ -203,16 +203,21 @@ MUTATIONS = [
      r'(id="edge-seedling-size--to--survival".*?<path class="vis c-)low"', r'\1high"', 1),
     ('graph arrow line has no certainty style', 'q1-graph.html',
      r'(id="edge-site-preparation--to--growth".*?<path class="vis) c-high"', r'\1"', 1),
+    # Q2 timeline chart
+    ('Q2 chart row says "Ahead" for a "Behind" finding', 'q2.html',
+     r'(<g class="tl-row[^"]*">.*?<tspan data-check="q2/[^"]+/direction">)Behind<', r'\1Ahead<', 1),
+    ('Q2 chart table shows a made-up marsh age', 'q2.html',
+     r'(<table class="tl-table">.*?data-check="q2/[^"]+/time_points/0">)[^<]+', r'\g<1>5-9 years', 1),
     ('Q3 row drops what was searched for', 'q3.html',
      r'data-template="[^"]*"', 'data-template="something else {outcome}"', 0),
     # 2.8 short answers built from the data
     ('short answer says "decreases" for an increase', 'q1.html',
      r'(<span data-group="increase/high">.*?) increase it</span>', r'\1 decrease it</span>', 1),
-    ('short answer certainty word changed', 'index.html',
+    ('short answer certainty word changed', 'q1.html',
      r'(<span data-cert="high">with )high certainty', r'\1moderate certainty', 1),
     ('short answer lists a finding under the wrong group', 'q1.html',
      r'(<span data-group="decrease/high"><a href=")[^"]+', r'\1q1.html#f-q1--site-preparation--growth', 1),
-    ('short answer links to a missing finding', 'index.html',
+    ('short answer links to a missing finding', 'q1.html',
      r'(<span data-group="increase/high"><a href=")[^"]+', r'\1q1.html#f-q1--nothing', 1),
     ('Q3 short answer study count changed', 'q3.html',
      r'(<div class="short"[^>]*>.*?\(<span data-check="q3/[^"]+/studies">)\d+', r'\g<1>99', 1),
@@ -251,7 +256,7 @@ class NewQuestions(unittest.TestCase):
         self.assertIn('q4 comparison', r.stdout)
         html = self.read(site, 'q4.html')
         self.assertIn('aria-label="How long"', html)   # the "how long?" answer comes first
-        self.assertIn('id="compare"', html)             # "Compared with natural marshes"
+        self.assertIn('id="timeline"', html)            # the comparison layout's marsh-age chart
         self.assertIn('data-check="q4/short_answer/time_to_reference_note"', html)
         self.assertIn('href="q4.html"', self.read(site, 'index.html'))
         self.assertEqual(Checker(site, answers).run(), [])
