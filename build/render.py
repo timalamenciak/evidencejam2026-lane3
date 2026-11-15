@@ -700,7 +700,7 @@ def nav_items(data: SiteData) -> List[Tuple[str, str]]:
         items.append(('%s.html' % qid, '%02d %s' % (n, question_name(q))))
         if qid in data.graphs:
             items.append((graph_file(qid), 'Graph'))
-    items.append(('method.html', 'Method'))
+    items.append(('method.html', 'Guide'))
     return items
 
 
@@ -742,7 +742,7 @@ with open(os.path.join(ROOT, 'static', 'tree.svg'), encoding='utf-8') as _f:
 
 def page(data: SiteData, filename: str, title: str, description: str, body: str, *,
          side: bool = True, jumps: Optional[List[Tuple[str, str]]] = None,
-         script: Optional[str] = None, home_menu: Optional[str] = None) -> str:
+         script: Optional[str] = None, home_menu: Optional[str] = None, wide: bool = False) -> str:
     """Every page has the same top bar (Figma "home page" frame): a thin line across the top of
     the screen, the boxed menu hanging from it (the line is the boxes' top edge) and the WHIMSY
     logo, which always links home. The bar stays at the top while scrolling.
@@ -750,7 +750,7 @@ def page(data: SiteData, filename: str, title: str, description: str, body: str,
     every other page has the left sidebar, styled the same way."""
     main = '<main id="main" tabindex="-1">\n%s\n</main>' % body
     top = [('index.html', 'Home')] + [(graph_file(q), 'Graph') for q in data.graphs] + \
-          [('method.html', 'Method')]
+          [('method.html', 'Guide')]
     boxed = ''.join('<li><a href="%s"%s>%s</a></li>' % (esc(h), ' aria-current="page"' if h == filename else '',
                                                        esc(t)) for h, t in top)
     header = ('<header class="site-top"><div class="site-top-in"><a class="logo" href="index.html">'
@@ -761,7 +761,9 @@ def page(data: SiteData, filename: str, title: str, description: str, body: str,
                   '<nav class="home-menu" aria-label="On this page">%s</nav></div>%s</div>'
                   % (header, TREE_HTML, home_menu, main))
     elif side:
-        layout = '%s<div class="layout">%s%s</div>' % (header, side_nav(data, filename, jumps), main)
+        # wide (the graph page): the menu runs across the top so the content gets the full width
+        layout = '%s<div class="layout%s">%s%s</div>' % (header, ' wide' if wide else '',
+                                                       side_nav(data, filename, jumps), main)
     else:
         layout = header + main
     rule = next((q.rule for q in data.questions.values() if q.rule), 'unknown')
@@ -800,7 +802,7 @@ def render_index(data: SiteData, prose: Prose) -> str:
     papers = (' from %s papers' % span('manifest/graph/source_documents', m['source_documents'])
               if m.get('source_documents') else '')
     sections.append(section(
-        'top', 'restoration evidence',
+        'top', 'our mission',
         '<p class="lead">Plain answers to %s restoration questions%s: what works, how sure we can be, '
         'and where nothing has been studied. Works offline.</p>' % (number_word(len(data.questions)), papers),
         level=1))
@@ -1464,7 +1466,7 @@ def render_graph_page(data: SiteData, qid: str, sources: List[SourcePage]) -> st
              ('%s.html' % qid, 'Back to the answer')]
     return page(data, gfile, 'Q%d graph · %s' % (n, name), 'The %s answer drawn as a causal graph, with the '
                 'sources behind every arrow.' % name.lower().replace(' ', '-'), body, jumps=jumps,
-                script='static/graph.js')
+                script='static/graph.js', wide=True)
 
 
 # --------------------------------------------------------------- method
