@@ -64,10 +64,12 @@
   --gap: #767676;
   --d-empty: #e6e7eb;     /* gap map: not studied (grey) */
   --d-empty-line: #b4b8c2;
-  --d-thin: #edf2fb;      /* 1 study: pale, dashed blue border */
-  --d-some: #a9c8f5;      /* 2-3 studies */
-  --d-dense: #2a4bd0;     /* 4 or more: white number on it, 6.9:1 */
-  --d-line: #3b5fe0;
+  --d-thin: #e8f0ff;      /* 1 study: pale, dashed bright-blue border */
+  --d-some: #8fbcff;      /* 2-3 studies: dark-blue number on it, 7:1 */
+  --d-dense: #2347e6;     /* 4 or more: white number on it, 6.7:1 */
+  --d-line: #2f5cf0;      /* box borders, 3.5:1 or more against each fill */
+  --d-dense-line: #1a2f9e;
+  --d-num: #1b2475;
   --box-condition: #f3f0e8;   /* graph: condition boxes */
   --box-outcome: #eaf2ea;     /* graph: outcome boxes */
   --box-combination: #f6f6f4; /* graph: combination box */
@@ -188,9 +190,9 @@ table.gapmap th[scope="col"] { min-width: 6rem; font-weight: 600; }
 table.gapmap th[scope="row"] { min-width: 12rem; }
 table.gapmap td { text-align: center; white-space: nowrap; }
 table.gapmap td.empty { color: var(--gap); }
-.swatch.d-thin { background: var(--d-thin); border: 1.5px dashed var(--d-line); }
+.swatch.d-thin { background: var(--d-thin); border: 2px dashed var(--d-line); }
 .swatch.d-some { background: var(--d-some); border-color: var(--d-line); }
-.swatch.d-dense { background: var(--d-dense); border-color: var(--d-dense); }
+.swatch.d-dense { background: var(--d-dense); border-color: var(--d-dense-line); }
 dl.key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 dl.key dt { font-weight: 600; }
 dl.key dd { margin: 0; color: var(--muted); }
@@ -775,13 +777,13 @@ table.gapmap { font-size: .95rem; border-collapse: separate; border-spacing: 5px
 table.gapmap th { border: 0; }
 table.gapmap th[scope="col"] { min-width: 6.5rem; padding: .6rem .4rem; vertical-align: bottom; }
 table.gapmap th[scope="row"] { min-width: 14rem; padding: .5rem .75rem; vertical-align: middle; }
-table.gapmap td { padding: 0; border: 1.5px solid transparent; border-radius: 6px; vertical-align: middle; }
+table.gapmap td { padding: 0; border: 2px solid transparent; border-radius: 6px; vertical-align: middle; }
 table.gapmap td.empty { height: 2.8rem; background: var(--d-empty); border-color: var(--d-empty-line); color: var(--gap); }
-table.gapmap td.d-thin { background: var(--d-thin); border: 1.5px dashed var(--d-line); }
+table.gapmap td.d-thin { background: var(--d-thin); border: 2.5px dashed var(--d-line); }
 table.gapmap td.d-some { background: var(--d-some); border-color: var(--d-line); }
-table.gapmap td.d-dense { background: var(--d-dense); border-color: var(--d-dense); }
+table.gapmap td.d-dense { background: var(--d-dense); border-color: var(--d-dense-line); }
 table.gapmap td button { display: block; width: 100%; min-height: 2.8rem; padding: .4rem; border: 0; border-radius: 5px;
-  background: transparent; font: inherit; font-size: 1.25rem; font-weight: 700; color: var(--dark-blue); cursor: pointer; text-align: center; }
+  background: transparent; font: inherit; font-size: 1.25rem; font-weight: 700; color: var(--d-num); cursor: pointer; text-align: center; }
 table.gapmap td.d-dense button { color: var(--white); }
 table.gapmap td button:hover { outline: 2px solid var(--link); outline-offset: 2px; }
 table.gapmap td button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
