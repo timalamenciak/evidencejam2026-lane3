@@ -1211,9 +1211,7 @@ def render_gapmap(data: SiteData, prose: Prose, q: Question, sources: List[Sourc
             items.append('<li id="%s">%s</li>' % (q3_cell_id(rid, cid), finding_card(
                 data, item, sources, subject=False, level=4, quotes_shown=0, compact=True)))
         n_f = len(items)
-        # under the name: how many of its combinations were studied (counted from the pack)
-        info = '<small class="rinfo">%d studied · %d not studied</small>' % (n_f, len(grid['cols']) - n_f)
-        trs.append('<tr><th scope="row"><span class="rname">%s</span>%s</th>%s</tr>' % (esc(rlbl), info, ''.join(tds)))
+        trs.append('<tr><th scope="row">%s</th>%s</tr>' % (esc(rlbl), ''.join(tds)))
         pops.append('<div popover id="%s" class="pop fpop rowpop" role="dialog" aria-label="%s">'
                     '<button type="button" class="pop-x" popovertarget="%s" popovertargetaction="hide">'
                     '<span aria-hidden="true">×</span><span class="sr-only">Close</span></button>'

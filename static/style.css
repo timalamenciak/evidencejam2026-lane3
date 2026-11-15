@@ -787,8 +787,6 @@ table.gapmap td button { display: block; width: 100%; min-height: 2.8rem; paddin
 table.gapmap td.d-dense button { color: var(--white); }
 table.gapmap td button:hover { outline: 2px solid var(--link); outline-offset: 2px; }
 table.gapmap td button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-table.gapmap th[scope="row"] .rname { display: block; }
-table.gapmap th[scope="row"] .rinfo { display: block; margin-top: .2rem; font-size: .8rem; font-weight: 400; color: var(--muted); }
 /* sticky names on white, with a shadow over the gaps between boxes so the map doesn't show through */
 .grid-wrap table.gapmap thead th, .grid-wrap table.gapmap thead td { background: var(--bg); box-shadow: 0 -5px 0 var(--bg), 5px 0 0 var(--bg), 0 5px 0 var(--bg); }
 .grid-wrap table.gapmap tbody th { box-shadow: -5px 0 0 var(--bg), 5px 0 0 var(--bg); }
