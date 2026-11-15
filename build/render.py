@@ -1183,7 +1183,7 @@ def render_gapmap(data: SiteData, prose: Prose, q: Question, sources: List[Sourc
     short = short_box('%s of %s combinations have been studied; %s of those by a single study. %s'
                       % (span('%s/summary/filled' % qid, s['filled']), span('%s/summary/cells' % qid, s['cells']),
                          span('%s/summary/thin' % qid, s['thin']), prose.short_answer[qid].html), 'short')
-    main = ('<h2 id="map">Gap map %s</h2><dl class="key"><div><dt><span class="swatch empty" aria-hidden="true"></span>'
+    main = ('<h2 id="map">Gap map %s</h2><dl class="key"><div><dt><span class="swatch empty" aria-hidden="true">–</span>'
             ' Not studied</dt><dd>no study tested the pairing (not a negative result)</dd></div>'
             '<div><dt><span class="swatch d-thin" aria-hidden="true"></span> 1 study</dt></div>'
             '<div><dt><span class="swatch d-some" aria-hidden="true"></span> 2–3 studies</dt></div>'
@@ -1199,7 +1199,7 @@ def render_gapmap(data: SiteData, prose: Prose, q: Question, sources: List[Sourc
         for cid, clbl in grid['cols']:
             item = grid['cells'][(rid, cid)]
             if isinstance(item, Gap):
-                tds.append('<td class="empty" aria-label="Not studied"></td>')  # 261 of these: kept minimal
+                tds.append('<td class="empty" aria-label="Not studied">–</td>')  # 261 of these: kept minimal
                 continue
             dens = item.raw.get('density', '')
             # a cell is a button: it opens its intervention's popup, on this combination's card

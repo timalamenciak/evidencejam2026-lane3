@@ -62,13 +62,9 @@
   --dir-mixed: #1a5fb4;    /* blue: mixed */
   --dir-none: #5f5f5f;     /* grey: no effect / unclear */
   --gap: #767676;
-  --d-empty: #e6e7eb;     /* gap map: not studied (grey) */
-  --d-empty-line: #b4b8c2;
-  --d-thin: #e8f0ff;      /* 1 study: pale, dashed bright-blue border */
+  --d-thin: #e8f0ff;      /* 1 study: pale */
   --d-some: #8fbcff;      /* 2-3 studies: dark-blue number on it, 7:1 */
   --d-dense: #2347e6;     /* 4 or more: white number on it, 6.7:1 */
-  --d-line: #2f5cf0;      /* box borders, 3.5:1 or more against each fill */
-  --d-dense-line: #1a2f9e;
   --d-num: #1b2475;
   --box-condition: #f3f0e8;   /* graph: condition boxes */
   --box-outcome: #eaf2ea;     /* graph: outcome boxes */
@@ -190,15 +186,14 @@ table.gapmap th[scope="col"] { min-width: 6rem; font-weight: 600; }
 table.gapmap th[scope="row"] { min-width: 12rem; }
 table.gapmap td { text-align: center; white-space: nowrap; }
 table.gapmap td.empty { color: var(--gap); }
-.swatch.d-thin { background: var(--d-thin); border: 2px dashed var(--d-line); }
-.swatch.d-some { background: var(--d-some); border-color: var(--d-line); }
-.swatch.d-dense { background: var(--d-dense); border-color: var(--d-dense-line); }
+.swatch.d-thin { background: var(--d-thin); }
+.swatch.d-some { background: var(--d-some); }
+.swatch.d-dense { background: var(--d-dense); }
 dl.key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 dl.key dt { font-weight: 600; }
 dl.key dd { margin: 0; color: var(--muted); }
 .swatch { display: inline-block; width: 1.2em; height: 1.2em; border: 1px solid var(--line); vertical-align: middle; text-align: center; line-height: 1.1em; }
-.swatch.empty { color: var(--gap); background: var(--d-empty); border-color: var(--d-empty-line); border-radius: 3px; }
-.swatch { border-radius: 3px; }
+.swatch.empty { color: var(--gap); }
 ul.cells { list-style: none; padding: 0; }
 ul.cells > li { border-bottom: 1px solid var(--divider); padding: .25rem 0; }
 .density { color: var(--muted); }
@@ -771,25 +766,22 @@ details.tl-tbl > summary { cursor: pointer; color: var(--link); margin: .25rem 0
   border: 1px solid var(--line); background: var(--bg); font-size: 1.3rem; line-height: 1; cursor: pointer; }
 .pop-x:hover { background: var(--panel); }
 
-/* Q3 gap map: each cell is a rounded box. Grey = not studied; the number is the study count, and
-   the shade says how many (dashed pale = 1, light = 2-3, dark = 4+). Certainty is in the popup. */
-table.gapmap { font-size: .95rem; border-collapse: separate; border-spacing: 5px; }
-table.gapmap th { border: 0; }
-table.gapmap th[scope="col"] { min-width: 6.5rem; padding: .6rem .4rem; vertical-align: bottom; }
-table.gapmap th[scope="row"] { min-width: 14rem; padding: .5rem .75rem; vertical-align: middle; }
-table.gapmap td { padding: 0; border: 2px solid transparent; border-radius: 6px; vertical-align: middle; }
-table.gapmap td.empty { height: 2.8rem; background: var(--d-empty); border-color: var(--d-empty-line); color: var(--gap); }
-table.gapmap td.d-thin { background: var(--d-thin); border: 2.5px dashed var(--d-line); }
-table.gapmap td.d-some { background: var(--d-some); border-color: var(--d-line); }
-table.gapmap td.d-dense { background: var(--d-dense); border-color: var(--d-dense-line); }
-table.gapmap td button { display: block; width: 100%; min-height: 2.8rem; padding: .4rem; border: 0; border-radius: 5px;
-  background: transparent; font: inherit; font-size: 1.25rem; font-weight: 700; color: var(--d-num); cursor: pointer; text-align: center; }
+/* Q3 gap map: cells are buttons showing just the study count; the shade says how many
+   (pale = 1, light = 2-3, dark = 4+). Certainty is in the popup. */
+table.gapmap { font-size: .95rem; }
+table.gapmap th[scope="col"] { min-width: 7.5rem; padding: .6rem .5rem; }
+table.gapmap th[scope="row"] { min-width: 14rem; padding: .7rem .75rem; }
+table.gapmap td { padding: 0; }
+table.gapmap td.empty { padding: .7rem .5rem; }
+table.gapmap td.d-thin { background: var(--d-thin); }
+table.gapmap td.d-some { background: var(--d-some); }
+table.gapmap td.d-dense { background: var(--d-dense); }
+table.gapmap td button { display: block; width: 100%; min-height: 3rem; padding: .5rem; border: 0; background: transparent;
+  font: inherit; font-size: 1.25rem; font-weight: 700; color: var(--d-num); cursor: pointer; text-align: center; }
 table.gapmap td.d-dense button { color: var(--white); }
-table.gapmap td button:hover { outline: 2px solid var(--link); outline-offset: 2px; }
-table.gapmap td button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-/* sticky names on white, with a shadow over the gaps between boxes so the map doesn't show through */
-.grid-wrap table.gapmap thead th, .grid-wrap table.gapmap thead td { background: var(--bg); box-shadow: 0 -5px 0 var(--bg), 5px 0 0 var(--bg), 0 5px 0 var(--bg); }
-.grid-wrap table.gapmap tbody th { box-shadow: -5px 0 0 var(--bg), 5px 0 0 var(--bg); }
+table.gapmap td button:hover { outline: 2px solid var(--link); outline-offset: -2px; }
+table.gapmap td button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+table.gapmap td.d-dense button:hover, table.gapmap td.d-dense button:focus-visible { outline-color: var(--white); }
 .rowpop.only ul.cells > li:not(.on) { display: none; }
 .rowpop.only .cnt { display: none; }
 .rowpop:not(.only) .show-all { display: none; }
@@ -805,8 +797,7 @@ table.gapmap td button:focus-visible { outline: 3px solid var(--focus); outline-
 .grid-wrap:fullscreen table.gapmap { font-size: .85rem; }
 .grid-wrap:fullscreen table.gapmap th[scope="col"] { min-width: 0; padding: .4rem .3rem; }
 .grid-wrap:fullscreen table.gapmap th[scope="row"] { min-width: 11rem; }
-.grid-wrap:fullscreen table.gapmap td button { min-height: 2.2rem; padding: .2rem; font-size: 1rem; }
-.grid-wrap:fullscreen table.gapmap td.empty { height: 2.2rem; }
+.grid-wrap:fullscreen table.gapmap td button { min-height: 2.4rem; padding: .4rem .2rem; font-size: 1.05rem; }
 .rowpop .pop-h { font-size: 1.2rem; font-weight: 700; margin: 0 0 .25rem; }
 .rowpop ul.cells { list-style: none; padding: 0; margin: .5rem 0 0; }
 .rowpop ul.cells > li { margin: .4rem 0; }
